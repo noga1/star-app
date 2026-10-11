@@ -58,7 +58,7 @@
                 <div>
                     <h1>
                         ⭐️ שיטת הכוכבים - צוות מורות
-                        <span class="version-badge">גרסה v1.6</span>
+                        <span class="version-badge">גרסה v1.7</span>
                     </h1>
                     <span style="font-size: 13px; color: #64748b;">מעקב כוכבים שיתופי יומי וחודשי</span>
                 </div>
@@ -67,10 +67,10 @@
 
             <!-- סרגל ניווט -->
             <div class="nav-tabs">
-                <button class="tab-btn active" data-tab="daily">📝 הזנת כוכבים יומית</button>
-                <button class="tab-btn" data-tab="dashboard">📊 דשבורד ודוחות</button>
-                <button class="tab-btn" data-tab="students">👩‍🎓 ניהול תלמידות</button>
-                <button class="tab-btn" data-tab="teachers">👩‍🏫 ניהול מורות</button>
+                <button class="tab-btn active" id="btn-daily" onclick="switchTab('daily')">📝 הזנת כוכבים יומית</button>
+                <button class="tab-btn" id="btn-dashboard" onclick="switchTab('dashboard')">📊 דשבורד ודוחות</button>
+                <button class="tab-btn" id="btn-students" onclick="switchTab('students')">👩‍🎓 ניהול תלמידות</button>
+                <button class="tab-btn" id="btn-teachers" onclick="switchTab('teachers')">👩‍🏫 ניהול מורות</button>
             </div>
         </div>
 
@@ -79,12 +79,12 @@
             <div class="grid-2">
                 <div>
                     <label>תאריך (שדה חובה):</label>
-                    <input type="date" id="daily-date">
+                    <input type="date" id="daily-date" onchange="onDateChange()">
                     <div id="day-of-week-label" class="day-display"></div>
                 </div>
                 <div>
                     <label>שם המורה המדווחת (שדה חובה):</label>
-                    <select id="teacher-select">
+                    <select id="teacher-select" onchange="markUnsavedChanges()">
                         <option value="">בחרי מורה...</option>
                     </select>
                 </div>
@@ -110,11 +110,11 @@
 
             <div style="margin-top: 16px;">
                 <label>הערות כלליות ליום הלימודים:</label>
-                <textarea id="daily-notes" rows="2" placeholder="הערות מיוחדות ליום זה..."></textarea>
+                <textarea id="daily-notes" rows="2" placeholder="הערות מיוחדות ליום זה..." oninput="markUnsavedChanges()"></textarea>
             </div>
 
             <div style="text-align: left; margin-top: 16px;">
-                <button class="btn" id="save-day-btn">שמרי נתוני יום 💾</button>
+                <button class="btn" onclick="saveDayData()">שמרי נתוני יום 💾</button>
             </div>
         </div>
 
@@ -128,11 +128,11 @@
                 <div class="grid-3">
                     <div>
                         <label>חודש:</label>
-                        <input type="month" id="filter-month">
+                        <input type="month" id="filter-month" onchange="renderDashboard()">
                     </div>
                     <div>
                         <label>קבוצה:</label>
-                        <select id="filter-group" multiple style="height: 42px;">
+                        <select id="filter-group" onchange="renderDashboard()" multiple style="height: 42px;">
                             <option value="א'">קבוצה א'</option>
                             <option value="ב'">קבוצה ב'</option>
                         </select>
@@ -140,7 +140,7 @@
                     </div>
                     <div>
                         <label>כיתה:</label>
-                        <select id="filter-class">
+                        <select id="filter-class" onchange="renderDashboard()">
                             <option value="">כל הכיתות</option>
                             <option value="ז'">ז'</option>
                             <option value="ח'">ח'</option>
@@ -152,13 +152,13 @@
                 <div class="grid-2" style="margin-top: 10px;">
                     <div>
                         <label>מורה מעדכנת:</label>
-                        <select id="filter-teacher">
+                        <select id="filter-teacher" onchange="renderDashboard()">
                             <option value="">כל המורות</option>
                         </select>
                     </div>
                     <div>
                         <label>מקצוע לימוד:</label>
-                        <select id="filter-subject">
+                        <select id="filter-subject" onchange="renderDashboard()">
                             <option value="">כל המקצועות</option>
                             <option value="עברית">עברית</option>
                             <option value="אנגלית">אנגלית</option>
@@ -171,11 +171,11 @@
             <table>
                 <thead>
                     <tr>
-                        <th data-sort="name">שם התלמידה ↕</th>
-                        <th data-sort="group">קבוצה ↕</th>
-                        <th data-sort="className">כיתה ↕</th>
-                        <th style="text-align: center;" data-sort="total">סה"כ כוכבים ↕</th>
-                        <th style="text-align: center;" data-sort="pocket">דמי כיס משוערים ↕</th>
+                        <th onclick="sortTable('name')">שם התלמידה ↕</th>
+                        <th onclick="sortTable('group')">קבוצה ↕</th>
+                        <th onclick="sortTable('className')">כיתה ↕</th>
+                        <th style="text-align: center;" onclick="sortTable('total')">סה"כ כוכבים ↕</th>
+                        <th style="text-align: center;" onclick="sortTable('pocket')">דמי כיס משוערים ↕</th>
                     </tr>
                 </thead>
                 <tbody id="dashboard-table-body">
@@ -200,7 +200,7 @@
                         <option value="ט'">כיתה ט'</option>
                         <option value="י'">כיתה י'</option>
                     </select>
-                    <button class="btn" id="add-student-btn">הוסיפי</button>
+                    <button class="btn" onclick="addStudent()">הוסיפי</button>
                 </div>
             </div>
             <div id="students-manage-list" style="margin-top: 16px;"></div>
@@ -212,10 +212,10 @@
                     <div style="font-size: 13px; color: #64748b;">מומלץ לשמור קובץ גיבוי מעת לעת להבטחת בטחון המידע.</div>
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-success" id="export-btn">📥 שמרי גיבוי (קובץ)</button>
+                    <button class="btn btn-success" onclick="exportData()">📥 שמרי גיבוי (קובץ)</button>
                     <label class="btn btn-secondary" style="cursor: pointer; margin: 0;">
                         📤 טעני גיבוי
-                        <input type="file" id="import-file" accept=".json" style="display: none;">
+                        <input type="file" accept=".json" style="display: none;" onchange="importData(event)">
                     </label>
                 </div>
             </div>
@@ -231,13 +231,14 @@
                     <option value="אנגלית">אנגלית</option>
                     <option value="מתמטיקה">מתמטיקה</option>
                 </select>
-                <button class="btn" id="add-teacher-btn">הוסיפי מורה</button>
+                <button class="btn" onclick="addTeacher()">הוסיפי מורה</button>
             </div>
             <div id="teachers-manage-list"></div>
         </div>
     </div>
 
     <script>
+        // הגדרת משתנים גלובליים
         let teachers = JSON.parse(localStorage.getItem('stars_teachers_v2')) || [
             { name: "תמר", subject: "מתמטיקה", active: true },
             { name: "נוגה", subject: "עברית", active: true },
@@ -251,54 +252,18 @@
 
         const todayStr = new Date().toISOString().split('T')[0];
 
-        // הפעלה ישירה ובטוחה ללא תלות באירוע טעינה
-        document.getElementById('daily-date').value = todayStr;
-        document.getElementById('filter-month').value = todayStr.substring(0, 7);
-        initApp();
-        setupEventListeners();
-
-        function setupEventListeners() {
-            // מעבר בין לשוניות
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const tabName = btn.getAttribute('data-tab');
-                    switchTab(tabName);
-                });
-            });
-
-            // אירועי טופס יומי
-            document.getElementById('daily-date').addEventListener('change', onDateChange);
-            document.getElementById('teacher-select').addEventListener('change', markUnsavedChanges);
-            document.getElementById('daily-notes').addEventListener('input', markUnsavedChanges);
-            document.getElementById('save-day-btn').addEventListener('click', saveDayData);
-
-            // כפתורי הוספה
-            document.getElementById('add-student-btn').addEventListener('click', addStudent);
-            document.getElementById('add-teacher-btn').addEventListener('click', addTeacher);
-
-            // גיבוי ושחזור
-            document.getElementById('export-btn').addEventListener('click', exportData);
-            document.getElementById('import-file').addEventListener('change', importData);
-
-            // סינונים בדשבורד
-            document.getElementById('filter-month').addEventListener('change', renderDashboard);
-            document.getElementById('filter-group').addEventListener('change', renderDashboard);
-            document.getElementById('filter-class').addEventListener('change', renderDashboard);
-            document.getElementById('filter-teacher').addEventListener('change', renderDashboard);
-            document.getElementById('filter-subject').addEventListener('change', renderDashboard);
-
-            // מיון טבלת דשבורד
-            document.querySelectorAll('th[data-sort]').forEach(th => {
-                th.addEventListener('click', () => {
-                    sortTable(th.getAttribute('data-sort'));
-                });
-            });
-        }
+        // הרצה מיידית באתחול העמוד
+        window.onload = function() {
+            document.getElementById('daily-date').value = todayStr;
+            document.getElementById('filter-month').value = todayStr.substring(0, 7);
+            initApp();
+        };
 
         function initApp() {
             updateTeachersDropdown();
             loadDayData();
             updateDayOfWeek(todayStr);
+            renderDailyTable();
         }
 
         function updateTeachersDropdown() {
@@ -342,7 +307,8 @@
             hasUnsavedChanges = false;
         }
 
-        function switchTab(tabName) {
+        // מעבר בין לשוניות (גלובלי)
+        window.switchTab = function(tabName) {
             if (hasUnsavedChanges && !confirm("יש שינויים שלא נשמרו. האם לעבור עמוד?")) return;
             
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -351,7 +317,7 @@
             const targetContent = document.getElementById('tab-' + tabName);
             if (targetContent) targetContent.classList.add('active');
 
-            const targetBtn = document.querySelector(`[data-tab="${tabName}"]`);
+            const targetBtn = document.getElementById('btn-' + tabName);
             if (targetBtn) targetBtn.classList.add('active');
 
             if (tabName === 'dashboard') renderDashboard();
@@ -381,9 +347,9 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${s.name}</strong></td>
-                    <td>${s.group} | ${s.className || 'ז\''}</td>
+                    <td>${s.group} \vert{}${s.className || 'ז\''}</td>
                     <td style="text-align:center;">
-                        <select class="star-select stars-${entry.lesson1}" data-student="${s.id}" data-lesson="lesson1">
+                        <select class="star-select stars-${entry.lesson1}" onchange="updateEntry(${s.id}, 'lesson1', this.value)">
                             <option value="0" ${entry.lesson1 == 0 ? 'selected' : ''}>0</option>
                             <option value="1" ${entry.lesson1 == 1 ? 'selected' : ''}>1</option>
                             <option value="2" ${entry.lesson1 == 2 ? 'selected' : ''}>2</option>
@@ -393,41 +359,4 @@
                         <div class="teacher-meta">${entry.teacher1 ? 'ע"י: ' + entry.teacher1 : ''}</div>
                     </td>
                     <td style="text-align:center;">
-                        <select class="star-select stars-${entry.lesson2}" data-student="${s.id}" data-lesson="lesson2">
-                            <option value="0" ${entry.lesson2 == 0 ? 'selected' : ''}>0</option>
-                            <option value="1" ${entry.lesson2 == 1 ? 'selected' : ''}>1</option>
-                            <option value="2" ${entry.lesson2 == 2 ? 'selected' : ''}>2</option>
-                            <option value="3" ${entry.lesson2 == 3 ? 'selected' : ''}>3</option>
-                            <option value="4" ${entry.lesson2 == 4 ? 'selected' : ''}>4</option>
-                        </select>
-                        <div class="teacher-meta">${entry.teacher2 ? 'ע"י: ' + entry.teacher2 : ''}</div>
-                    </td>
-                    <td style="text-align:center; font-weight:bold; color:#4338ca;">
-                        ${totalDaily} ⭐️
-                    </td>
-                    <td>
-                        <input type="text" value="${entry.notes || ''}" placeholder="הערה..." data-student="${s.id}" data-field="notes" style="font-size:12px; padding:6px;" class="student-note-input">
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            tbody.querySelectorAll('select.star-select').forEach(sel => {
-                sel.addEventListener('change', (e) => {
-                    updateEntry(e.target.getAttribute('data-student'), e.target.getAttribute('data-lesson'), e.target.value);
-                });
-            });
-
-            tbody.querySelectorAll('input.student-note-input').forEach(inp => {
-                inp.addEventListener('input', (e) => {
-                    updateEntry(e.target.getAttribute('data-student'), 'notes', e.target.value);
-                });
-            });
-        }
-
-        function updateEntry(studentId, field, value) {
-            const date = document.getElementById('daily-date').value;
-            const currentTeacher = document.getElementById('teacher-select').value;
-
-            if (!currentTeacher && (field === 'lesson1' || field === 'lesson2')) {
-                alert('נא לבחור תחילה את שם המורה המדו
+                        <select class="star-select stars-${entry.lesson2}"
