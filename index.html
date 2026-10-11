@@ -201,37 +201,4 @@
             </div>
             <div id="students-manage-list" style="margin-top: 16px;"></div>
 
-            <!-- גיבוי ושחזור -->
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 2px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div>
-                    <strong>שמירת וגיבוי נתונים:</strong>
-                    <div style="font-size: 13px; color: #64748b;">מומלץ לשמור קובץ גיבוי מעת לעת להבטחת בטחון המידע.</div>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-success" onclick="exportData()">📥 שמרי גיבוי (קובץ)</button>
-                    <label class="btn btn-secondary" style="cursor: pointer; margin: 0;">
-                        📤 טעני גיבוי
-                        <input type="file" accept=".json" style="display: none;" onchange="importData(event)">
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- לשונית 4: ניהול מורות -->
-        <div id="tab-teachers" class="card tab-content">
-            <h2>ניהול צוות מורות</h2>
-            <div class="grid-3" style="margin-bottom: 16px;">
-                <input type="text" id="new-teacher-name" placeholder="שם מורה חדשה...">
-                <select id="new-teacher-subject">
-                    <option value="עברית">עברית</option>
-                    <option value="אנגלית">אנגלית</option>
-                    <option value="מתמטיקה">מתמטיקה</option>
-                </select>
-                <button class="btn" onclick="addTeacher()">הוסיפי מורה</button>
-            </div>
-            <div id="teachers-manage-list"></div>
-        </div>
-    </div>
-
-    <script>
-        let teachers = JSON.parse(localStorage.getItem('stars_
+            <!-- גיבוי ושחזור
