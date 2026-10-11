@@ -38,6 +38,8 @@
         .btn-success:hover { background: #15803d; }
         .btn-secondary { background: #64748b; }
         .btn-secondary:hover { background: #475569; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
         .btn-sm { padding: 6px 12px; font-size: 12px; }
         
         .badge { background: #dcfce7; color: #166534; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; display: none; }
@@ -68,7 +70,7 @@
 
         <!-- לשונית 1: הזנת כוכבים יומית -->
         <div id="tab-daily" class="card">
-            <div class="grid-3">
+            <div class="grid-2">
                 <div>
                     <label>תאריך (שדה חובה):</label>
                     <input type="date" id="daily-date" onchange="onDateChange()">
@@ -79,24 +81,6 @@
                     <select id="teacher-select" onchange="markUnsavedChanges()">
                         <option value="">בחרי מורה...</option>
                     </select>
-                </div>
-                <div class="grid-2" style="margin-bottom:0;">
-                    <div>
-                        <label>מקצוע שיעור 1:</label>
-                        <select id="subject-lesson-1" onchange="markUnsavedChanges()">
-                            <option value="עברית">עברית</option>
-                            <option value="אנגלית">אנגלית</option>
-                            <option value="מתמטיקה">מתמטיקה</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>מקצוע שיעור 2:</label>
-                        <select id="subject-lesson-2" onchange="markUnsavedChanges()">
-                            <option value="עברית">עברית</option>
-                            <option value="אנגלית">אנגלית</option>
-                            <option value="מתמטיקה">מתמטיקה</option>
-                        </select>
-                    </div>
                 </div>
             </div>
 
@@ -237,7 +221,6 @@
     </div>
 
     <script>
-        // שמירת נתונים עם מפתח קבוע למניעת דריסה בעדכוני קוד
         let teachers = JSON.parse(localStorage.getItem('stars_teachers_v2')) || [
             { name: "תמר", subject: "מתמטיקה", active: true },
             { name: "נוגה", subject: "עברית", active: true },
@@ -399,8 +382,12 @@
             if (!records[date]) records[date] = { entries: {} };
             records[date].notes = document.getElementById('daily-notes').value;
             records[date].mainTeacher = teacher;
-            records[date].subject1 = document.getElementById('subject-lesson-1').value;
-            records[date].subject2 = document.getElementById('subject-lesson-2').value;
+
+            // שמירת המקצועות אוטומטית לפי המורה שבחרה
+            const teacherObj = teachers.find(t => t.name === teacher);
+            const teacherSubject = teacherObj ? teacherObj.subject : 'עברית';
+            records[date].subject1 = teacherSubject;
+            records[date].subject2 = teacherSubject;
 
             localStorage.setItem('stars_records_v2', JSON.stringify(records));
             hasUnsavedChanges = false;
@@ -409,11 +396,9 @@
 
         function loadDayData() {
             const date = document.getElementById('daily-date').value;
-            const dayRecord = records[date] || { notes: '', mainTeacher: '', subject1: 'עברית', subject2: 'אנגלית' };
+            const dayRecord = records[date] || { notes: '', mainTeacher: '' };
             document.getElementById('daily-notes').value = dayRecord.notes || '';
             document.getElementById('teacher-select').value = dayRecord.mainTeacher || '';
-            document.getElementById('subject-lesson-1').value = dayRecord.subject1 || 'עברית';
-            document.getElementById('subject-lesson-2').value = dayRecord.subject2 || 'אנגלית';
             renderDailyTable();
         }
 
@@ -437,4 +422,232 @@
             const filterMonth = document.getElementById('filter-month').value;
             const groupSelect = document.getElementById('filter-group');
             const selectedGroups = Array.from(groupSelect.selectedOptions).map(o => o.value);
-            const filterClass = document.getElementById('filter-class').value.
+            const filterClass = document.getElementById('filter-class').value.trim().toLowerCase();
+            const filterTeacher = document.getElementById('filter-teacher').value;
+            const filterSubject = document.getElementById('filter-subject').value;
+
+            let reportData = [];
+
+            students.forEach(s => {
+                if (selectedGroups.length > 0 && !selectedGroups.includes(s.group)) return;
+                if (filterClass && (!s.className || !s.className.toLowerCase().includes(filterClass))) return;
+
+                let total = 0;
+                Object.keys(records).forEach(dateStr => {
+                    if (filterMonth && !dateStr.startsWith(filterMonth)) return;
+                    const dayRec = records[dateStr];
+                    if (!dayRec || !dayRec.entries || !dayRec.entries[s.id]) return;
+
+                    const entry = dayRec.entries[s.id];
+                    
+                    let addL1 = false;
+                    let addL2 = false;
+
+                    if ((!filterTeacher || entry.teacher1 === filterTeacher) && (!filterSubject || dayRec.subject1 === filterSubject)) {
+                        addL1 = true;
+                    }
+                    if ((!filterTeacher || entry.teacher2 === filterTeacher) && (!filterSubject || dayRec.subject2 === filterSubject)) {
+                        addL2 = true;
+                    }
+
+                    if (addL1) total += (Number(entry.lesson1) || 0);
+                    if (addL2) total += (Number(entry.lesson2) || 0);
+                });
+
+                reportData.push({
+                    name: s.name,
+                    group: s.group,
+                    className: s.className || '-',
+                    total: total,
+                    pocket: total * 2
+                });
+            });
+
+            reportData.sort((a, b) => {
+                let valA = a[currentSortField];
+                let valB = b[currentSortField];
+                if (typeof valA === 'string') {
+                    return sortAscending ? valA.localeCompare(valB, 'he') : valB.localeCompare(valA, 'he');
+                } else {
+                    return sortAscending ? valA - valB : valB - valA;
+                }
+            });
+
+            reportData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${item.name}</strong></td>
+                    <td>${item.group}</td>
+                    <td>${item.className}</td>
+                    <td style="text-align:center; font-weight:bold; color:#4338ca;">${item.total} ⭐️</td>
+                    <td style="text-align:center; font-weight:bold; color:#16a34a;">₪${item.pocket}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function sortTable(field) {
+            if (currentSortField === field) {
+                sortAscending = !sortAscending;
+            } else {
+                currentSortField = field;
+                sortAscending = true;
+            }
+            renderDashboard();
+        }
+
+        function renderStudentsManage() {
+            const list = document.getElementById('students-manage-list');
+            list.innerHTML = '';
+            
+            if (students.length === 0) {
+                list.innerHTML = `<div style="text-align:center; color:#64748b; padding:15px;">עדיין לא הוגדרו תלמידות. הוסיפי תלמידה חדשה למעלה.</div>`;
+                return;
+            }
+
+            students.forEach(s => {
+                const item = document.createElement('div');
+                item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #e2e8f0; flex-wrap:wrap; gap:10px;';
+                item.innerHTML = `
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="text" value="${s.name}" onchange="updateStudentField(${s.id}, 'name', this.value)" style="width:140px; padding:6px;">
+                        <select onchange="updateStudentField(${s.id}, 'group', this.value)" style="width:100px; padding:6px;">
+                            <option value="א'" ${s.group === "א'" ? 'selected' : ''}>קבוצה א'</option>
+                            <option value="ב'" ${s.group === "ב'" ? 'selected' : ''}>קבוצה ב'</option>
+                        </select>
+                        <input type="text" value="${s.className || ''}" placeholder="כיתה" onchange="updateStudentField(${s.id}, 'className', this.value)" style="width:90px; padding:6px;">
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <span style="font-size:13px; color:${s.active ? 'green' : 'gray'}">${s.active ? 'פעילה' : 'לא פעילה'}</span>
+                        <button class="btn btn-sm ${s.active ? 'btn-secondary' : 'btn-success'}" onclick="toggleStudent(${s.id})">${s.active ? 'הפכי ללא פעילה' : 'הפעילי מחדש'}</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteStudent(${s.id})">מחיקה</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function addStudent() {
+            const name = document.getElementById('new-student-name').value.trim();
+            const group = document.getElementById('new-student-group').value;
+            const className = document.getElementById('new-student-class').value.trim();
+            if (!name) {
+                alert('נא להזין את שם התלמידה.');
+                return;
+            }
+
+            students.push({ id: Date.now(), name, group, className, active: true });
+            localStorage.setItem('stars_students_v2', JSON.stringify(students));
+            document.getElementById('new-student-name').value = '';
+            document.getElementById('new-student-class').value = '';
+            renderStudentsManage();
+            renderDailyTable();
+        }
+
+        function updateStudentField(id, field, value) {
+            students = students.map(s => s.id === id ? { ...s, [field]: value } : s);
+            localStorage.setItem('stars_students_v2', JSON.stringify(students));
+            renderDailyTable();
+        }
+
+        function toggleStudent(id) {
+            students = students.map(s => s.id === id ? { ...s, active: !s.active } : s);
+            localStorage.setItem('stars_students_v2', JSON.stringify(students));
+            renderStudentsManage();
+            renderDailyTable();
+        }
+
+        function deleteStudent(id) {
+            if (confirm("האם את בטוחה שברצונך למחוק תלמידה זו?")) {
+                students = students.filter(s => s.id !== id);
+                localStorage.setItem('stars_students_v2', JSON.stringify(students));
+                renderStudentsManage();
+                renderDailyTable();
+            }
+        }
+
+        function renderTeachersManage() {
+            const list = document.getElementById('teachers-manage-list');
+            list.innerHTML = '';
+            teachers.forEach(t => {
+                const item = document.createElement('div');
+                item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #e2e8f0;';
+                item.innerHTML = `
+                    <div>
+                        <strong>👩‍🏫 ${t.name}</strong> - מקצוע: <em>${t.subject}</em> 
+                        <span style="margin-right:15px; color:${t.active ? 'green' : 'gray'}">(${t.active ? 'פעילה' : 'לא פעילה'})</span>
+                    </div>
+                    <button class="btn btn-sm ${t.active ? 'btn-secondary' : 'btn-success'}" onclick="toggleTeacher('${t.name}')">${t.active ? 'הפכי ללא פעילה' : 'הפעילי'}</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function addTeacher() {
+            const name = document.getElementById('new-teacher-name').value.trim();
+            const subject = document.getElementById('new-teacher-subject').value;
+            if (!name || teachers.some(t => t.name === name)) {
+                alert('נא להזין שם מורה תקין שאינו קיים כבר.');
+                return;
+            }
+            teachers.push({ name, subject, active: true });
+            localStorage.setItem('stars_teachers_v2', JSON.stringify(teachers));
+            document.getElementById('new-teacher-name').value = '';
+            renderTeachersManage();
+            updateTeachersDropdown();
+        }
+
+        function toggleTeacher(name) {
+            teachers = teachers.map(t => t.name === name ? { ...t, active: !t.active } : t);
+            localStorage.setItem('stars_teachers_v2', JSON.stringify(teachers));
+            renderTeachersManage();
+            updateTeachersDropdown();
+        }
+
+        function exportData() {
+            const backupData = {
+                students: students,
+                teachers: teachers,
+                records: records,
+                date: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'stars_backup_' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.students) {
+                        students = data.students;
+                        localStorage.setItem('stars_students_v2', JSON.stringify(students));
+                    }
+                    if (data.teachers) {
+                        teachers = data.teachers;
+                        localStorage.setItem('stars_teachers_v2', JSON.stringify(teachers));
+                    }
+                    if (data.records) {
+                        records = data.records;
+                        localStorage.setItem('stars_records_v2', JSON.stringify(records));
+                    }
+                    alert('הנתונים שוחזרו בהצלחה!');
+                    location.reload();
+                } catch (err) {
+                    alert('שגיאה בקריאת קובץ הגיבוי.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
