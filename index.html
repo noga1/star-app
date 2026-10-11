@@ -14,6 +14,8 @@
         .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; background: #e2e8f0; padding: 4px; border-radius: 12px; }
         .tab-btn { flex: 1; padding: 10px 14px; border: none; background: transparent; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; font-size: 14px; color: #475569; }
         .tab-btn.active { background: white; color: #4338ca; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
         .grid-2, .grid-3 { display: grid; gap: 16px; margin-bottom: 16px; }
         .grid-2 { grid-template-columns: 1fr 1fr; }
         .grid-3 { grid-template-columns: repeat(3, 1fr); }
@@ -61,15 +63,15 @@
 
             <!-- סרגל ניווט -->
             <div class="nav-tabs">
-                <button class="tab-btn active" onclick="switchTab('daily')">📝 הזנת כוכבים יומית</button>
-                <button class="tab-btn" onclick="switchTab('dashboard')">📊 דשבורד ודוחות</button>
-                <button class="tab-btn" onclick="switchTab('students')">👩‍🎓 ניהול תלמידות</button>
-                <button class="tab-btn" onclick="switchTab('teachers')">👩‍🏫 ניהול מורות</button>
+                <button class="tab-btn active" data-tab="daily" onclick="switchTab('daily')">📝 הזנת כוכבים יומית</button>
+                <button class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard')">📊 דשבורד ודוחות</button>
+                <button class="tab-btn" data-tab="students" onclick="switchTab('students')">👩‍🎓 ניהול תלמידות</button>
+                <button class="tab-btn" data-tab="teachers" onclick="switchTab('teachers')">👩‍🏫 ניהול מורות</button>
             </div>
         </div>
 
         <!-- לשונית 1: הזנת כוכבים יומית -->
-        <div id="tab-daily" class="card">
+        <div id="tab-daily" class="card tab-content active">
             <div class="grid-2">
                 <div>
                     <label>תאריך (שדה חובה):</label>
@@ -113,7 +115,7 @@
         </div>
 
         <!-- לשונית 2: דשבורד ודוחות -->
-        <div id="tab-dashboard" class="card" style="display: none;">
+        <div id="tab-dashboard" class="card tab-content">
             <h2>דשבורד וסיכום נתונים</h2>
             
             <!-- אזור סינונים -->
@@ -179,7 +181,7 @@
         </div>
 
         <!-- לשונית 3: ניהול תלמידות -->
-        <div id="tab-students" class="card" style="display: none;">
+        <div id="tab-students" class="card tab-content">
             <h2>ניהול תלמידות</h2>
             <div class="grid-3">
                 <input type="text" id="new-student-name" placeholder="שם תלמידה חדשה...">
@@ -216,7 +218,7 @@
         </div>
 
         <!-- לשונית 4: ניהול מורות -->
-        <div id="tab-teachers" class="card" style="display: none;">
+        <div id="tab-teachers" class="card tab-content">
             <h2>ניהול צוות מורות</h2>
             <div class="grid-3" style="margin-bottom: 16px;">
                 <input type="text" id="new-teacher-name" placeholder="שם מורה חדשה...">
@@ -232,232 +234,4 @@
     </div>
 
     <script>
-        let teachers = JSON.parse(localStorage.getItem('stars_teachers_v2')) || [
-            { name: "תמר", subject: "מתמטיקה", active: true },
-            { name: "נוגה", subject: "עברית", active: true },
-            { name: "נס", subject: "אנגלית", active: true }
-        ];
-        let students = JSON.parse(localStorage.getItem('stars_students_v2')) || [];
-        let records = JSON.parse(localStorage.getItem('stars_records_v2')) || {};
-        let hasUnsavedChanges = false;
-        let currentSortField = 'name';
-        let sortAscending = true;
-
-        const todayStr = new Date().toISOString().split('T')[0];
-        document.getElementById('daily-date').value = todayStr;
-        document.getElementById('filter-month').value = todayStr.substring(0, 7);
-
-        function initApp() {
-            updateTeachersDropdown();
-            loadDayData();
-            updateDayOfWeek(todayStr);
-        }
-
-        function updateTeachersDropdown() {
-            const select = document.getElementById('teacher-select');
-            const filterSelect = document.getElementById('filter-teacher');
-            const currentVal = select.value;
-            const currentFilter = filterSelect.value;
-
-            select.innerHTML = '<option value="">בחרי מורה...</option>';
-            filterSelect.innerHTML = '<option value="">כל המורות</option>';
-
-            teachers.filter(t => t.active).forEach(t => {
-                const opt1 = document.createElement('option');
-                opt1.value = t.name;
-                opt1.innerText = `${t.name} (${t.subject})`;
-                select.appendChild(opt1);
-
-                const opt2 = document.createElement('option');
-                opt2.value = t.name;
-                opt2.innerText = t.name;
-                filterSelect.appendChild(opt2);
-            });
-            select.value = currentVal;
-            filterSelect.value = currentFilter;
-        }
-
-        function updateDayOfWeek(dateStr) {
-            const dateObj = new Date(dateStr);
-            const days = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'יום שבת'];
-            document.getElementById('day-of-week-label').innerText = days[dateObj.getDay()];
-        }
-
-        function onDateChange() {
-            if (hasUnsavedChanges && !confirm("יש שינויים שלא נשמרו. האם לעבור לתאריך אחר?")) return;
-            const date = document.getElementById('daily-date').value;
-            updateDayOfWeek(date);
-            loadDayData();
-            hasUnsavedChanges = false;
-        }
-
-        function switchTab(tabName) {
-            if (hasUnsavedChanges && !confirm("יש שינויים שלא נשמרו. האם לעבור עמוד?")) return;
-            ['daily', 'dashboard', 'students', 'teachers'].forEach(t => {
-                document.getElementById('tab-' + t).style.display = t === tabName ? 'block' : 'none';
-            });
-            document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
-                btn.classList.toggle('active', ['daily', 'dashboard', 'students', 'teachers'][idx] === tabName);
-            });
-            if (tabName === 'dashboard') renderDashboard();
-            if (tabName === 'students') renderStudentsManage();
-            if (tabName === 'teachers') renderTeachersManage();
-            hasUnsavedChanges = false;
-        }
-
-        function renderDailyTable() {
-            const tbody = document.getElementById('students-table-body');
-            tbody.innerHTML = '';
-            const date = document.getElementById('daily-date').value;
-            const dayRecord = records[date] || { entries: {} };
-
-            const activeStudents = students.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name, 'he'));
-
-            if (activeStudents.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:20px;">טרם הוגדרו תלמידות פעילות. ניתן להוסיף תלמידות בלשונית "ניהול תלמידות".</td></tr>`;
-                return;
-            }
-
-            activeStudents.forEach(s => {
-                const entry = dayRecord.entries[s.id] || { lesson1: 0, lesson2: 0, notes: '', teacher1: '', teacher2: '' };
-                const totalDaily = (Number(entry.lesson1) || 0) + (Number(entry.lesson2) || 0);
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${s.name}</strong></td>
-                    <td>${s.group} | ${s.className || 'ז\''}</td>
-                    <td style="text-align:center;">
-                        <select class="star-select stars-${entry.lesson1}" onchange="updateEntry(${s.id}, 'lesson1', this.value)">
-                            <option value="0" ${entry.lesson1 == 0 ? 'selected' : ''}>0</option>
-                            <option value="1" ${entry.lesson1 == 1 ? 'selected' : ''}>1</option>
-                            <option value="2" ${entry.lesson1 == 2 ? 'selected' : ''}>2</option>
-                            <option value="3" ${entry.lesson1 == 3 ? 'selected' : ''}>3</option>
-                            <option value="4" ${entry.lesson1 == 4 ? 'selected' : ''}>4</option>
-                        </select>
-                        <div class="teacher-meta">${entry.teacher1 ? 'ע"י: ' + entry.teacher1 : ''}</div>
-                    </td>
-                    <td style="text-align:center;">
-                        <select class="star-select stars-${entry.lesson2}" onchange="updateEntry(${s.id}, 'lesson2', this.value)">
-                            <option value="0" ${entry.lesson2 == 0 ? 'selected' : ''}>0</option>
-                            <option value="1" ${entry.lesson2 == 1 ? 'selected' : ''}>1</option>
-                            <option value="2" ${entry.lesson2 == 2 ? 'selected' : ''}>2</option>
-                            <option value="3" ${entry.lesson2 == 3 ? 'selected' : ''}>3</option>
-                            <option value="4" ${entry.lesson2 == 4 ? 'selected' : ''}>4</option>
-                        </select>
-                        <div class="teacher-meta">${entry.teacher2 ? 'ע"י: ' + entry.teacher2 : ''}</div>
-                    </td>
-                    <td style="text-align:center; font-weight:bold; color:#4338ca;">
-                        ${totalDaily} ⭐️
-                    </td>
-                    <td>
-                        <input type="text" value="${entry.notes || ''}" placeholder="הערה..." onchange="updateEntry(${s.id}, 'notes', this.value)" style="font-size:12px; padding:6px;">
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function updateEntry(studentId, field, value) {
-            const date = document.getElementById('daily-date').value;
-            const currentTeacher = document.getElementById('teacher-select').value;
-
-            if (!currentTeacher && (field === 'lesson1' || field === 'lesson2')) {
-                alert('נא לבחור תחילה את שם המורה המדווחת בראש הטופס.');
-                renderDailyTable();
-                return;
-            }
-
-            if (!records[date]) records[date] = { entries: {} };
-            if (!records[date].entries[studentId]) records[date].entries[studentId] = { lesson1: 0, lesson2: 0, notes: '', teacher1: '', teacher2: '' };
-
-            records[date].entries[studentId][field] = value;
-            if (field === 'lesson1' && currentTeacher) records[date].entries[studentId].teacher1 = currentTeacher;
-            if (field === 'lesson2' && currentTeacher) records[date].entries[studentId].teacher2 = currentTeacher;
-
-            markUnsavedChanges();
-            renderDailyTable();
-        }
-
-        function markUnsavedChanges() {
-            hasUnsavedChanges = true;
-        }
-
-        function saveDayData() {
-            const teacher = document.getElementById('teacher-select').value;
-            if (!teacher) {
-                alert('נא לבחור את שם המורה המדווחת לפני השמירה.');
-                return;
-            }
-
-            const date = document.getElementById('daily-date').value;
-            if (!records[date]) records[date] = { entries: {} };
-            records[date].notes = document.getElementById('daily-notes').value;
-            records[date].mainTeacher = teacher;
-
-            const teacherObj = teachers.find(t => t.name === teacher);
-            const teacherSubject = teacherObj ? teacherObj.subject : 'עברית';
-            records[date].subject1 = teacherSubject;
-            records[date].subject2 = teacherSubject;
-
-            localStorage.setItem('stars_records_v2', JSON.stringify(records));
-            hasUnsavedChanges = false;
-            showToast();
-        }
-
-        function loadDayData() {
-            const date = document.getElementById('daily-date').value;
-            const dayRecord = records[date] || { notes: '', mainTeacher: '' };
-            document.getElementById('daily-notes').value = dayRecord.notes || '';
-            document.getElementById('teacher-select').value = dayRecord.mainTeacher || '';
-            renderDailyTable();
-        }
-
-        function showToast() {
-            const toast = document.getElementById('toast');
-            toast.style.display = 'inline-block';
-            setTimeout(() => toast.style.display = 'none', 2000);
-        }
-
-        window.addEventListener('beforeunload', (e) => {
-            if (hasUnsavedChanges) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
-        });
-
-        function renderDashboard() {
-            const tbody = document.getElementById('dashboard-table-body');
-            tbody.innerHTML = '';
-
-            const filterMonth = document.getElementById('filter-month').value;
-            const groupSelect = document.getElementById('filter-group');
-            const selectedGroups = Array.from(groupSelect.selectedOptions).map(o => o.value);
-            const filterClass = document.getElementById('filter-class').value;
-            const filterTeacher = document.getElementById('filter-teacher').value;
-            const filterSubject = document.getElementById('filter-subject').value;
-
-            let reportData = [];
-
-            students.forEach(s => {
-                if (selectedGroups.length > 0 && !selectedGroups.includes(s.group)) return;
-                if (filterClass && s.className !== filterClass) return;
-
-                let total = 0;
-                Object.keys(records).forEach(dateStr => {
-                    if (filterMonth && !dateStr.startsWith(filterMonth)) return;
-                    const dayRec = records[dateStr];
-                    if (!dayRec || !dayRec.entries || !dayRec.entries[s.id]) return;
-
-                    const entry = dayRec.entries[s.id];
-                    
-                    let addL1 = false;
-                    let addL2 = false;
-
-                    if ((!filterTeacher || entry.teacher1 === filterTeacher) && (!filterSubject || dayRec.subject1 === filterSubject)) {
-                        addL1 = true;
-                    }
-                    if ((!filterTeacher || entry.teacher2 === filterTeacher) && (!filterSubject || dayRec.subject2 === filterSubject)) {
-                        addL2 = true;
-                    }
-
-                    if (addL
+        let teachers = JSON.parse(localStorage.getItem('stars_
