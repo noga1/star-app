@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>שיטת הכוכבים - צוות מורות</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: #f8fafc; color: #1e293b; margin: 0; padding: 16px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        h1 { margin: 0; color: #4338ca; font-size: 22px; }
+        .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; background: #e2e8f0; padding: 4px; border-radius: 12px; }
+        .tab-btn { flex: 1; padding: 10px 14px; border: none; background: transparent; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; font-size: 14px; color: #475569; }
+        .tab-btn.active { background: white; color: #4338ca; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+        @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        th { background: #f1f5f9; color: #334155; }
+        
+        /* עיצוב דינמי לכפתורי בחירת כוכבים */
+        .star-select { width: 65px; text-align: center; font-weight: bold; border-radius: 8px; padding: 8px; border: 1px solid #cbd5e1; cursor: pointer; transition: all 0.2s; }
+        .stars-0 { background-color: #f1f5f9; color: #94a3b8; }
+        .stars-1 { background-color: #fef9c3; color: #854d0e; }
+        .stars-2 { background-color: #fef08a; color: #713f12; }
+        .stars-3 { background-color: #bbf7d0; color: #166534; }
+        .stars-4 { background-color: #86efac; color: #14532d; }
+
+        .btn { background: #4338ca; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn:hover { background: #3730a3; }
+        .btn-success { background: #16a34a; }
+        .btn-success:hover { background: #15803d; }
+        .btn-danger { background: #ef4444; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .badge { background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; display: none; }
+        .day-display { font-size: 13px; color: #64748b; margin-top: 2px; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- כותרת -->
+        <div class="card">
+            <div class="header">
+                <div>
+                    <h1>⭐️ שיטת הכוכבים - צוות מורות</h1>
+                    <span style="font-size: 13px; color: #64748b;">מעקב כוכבים שיתופי יומי וחודשי</span>
+                </div>
+                <div id="toast" class="badge">✓ נשמר בהצלחה</div>
+            </div>
+
+            <!-- סרגל ניווט -->
+            <div class="nav-tabs">
+                <button class="tab-btn active" onclick="switchTab('daily')">📝 הזנת כוכבים יומית</button>
+                <button class="tab-btn" onclick="switchTab('dashboard')">📊 דשבורד ודוחות</button>
+                <button class="tab-btn" onclick="switchTab('students')">👩‍🎓 ניהול תלמידות</button>
+                <button class="tab-btn" onclick="switchTab('teachers')">👩‍🏫 ניהול מורות</button>
+            </div>
+        </div>
+
+        <!-- לשונית 1: הזנת כוכבים יומית -->
+        <div id="tab-daily" class="card">
+            <div class="grid-2">
+                <div>
+                    <label>תאריך (שדה חובה):</label>
+                    <input type="date" id="daily-date" onchange="onDateChange()">
+                    <div id="day-of-week-label" class="day-display"></div>
+                </div>
+                <div>
+                    <label>שם המורה (שדה חובה):</label>
+                    <select id="teacher-select" onchange="markUnsavedChanges()">
+                        <option value="">בחרי מורה...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>שם התלמידה</th>
+                            <th style="text-align: center;">שיעור 1 (0-4)</th>
+                            <th style="text-align: center;">שיעור 2 (0-4)</th>
+                            <th style="text-align: center;">סה"כ יומי</th>
+                            <th>הערות / מורה מעדכנת</th>
+                        </tr>
+                    </thead>
+                    <tbody id="students-table-body">
+                        <!-- מתווסף מ-JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 16px;">
+                <label>הערות כלליות ליום הלימודים:</label>
+                <textarea id="daily-notes" rows="2" placeholder="הערות מיוחדות ליום זה..." oninput="markUnsavedChanges()"></textarea>
+            </div>
+
+            <div style="text-align: left; margin-top: 16px;">
+                <button class="btn" onclick="saveDayData()">שמור נתוני יום 💾</button>
+            </div>
+        </div>
+
+        <!-- לשונית 2: דשבורד -->
+        <div id="tab-dashboard" class="card" style="display: none;">
+            <h2>סיכום צבירת כוכבים חודשי</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>שם התלמידה</th>
+                        <th>קבוצה</th>
+                        <th style="text-align: center;">סה"כ כוכבים שנצברו</th>
+                        <th style="text-align: center;">דמי כיס משוערים</th>
+                    </tr>
+                </thead>
+                <tbody id="dashboard-table-body">
+                    <!-- מתווסף מ-JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- לשונית 3: ניהול תלמידות -->
+        <div id="tab-students" class="card" style="display: none;">
+            <h2>ניהול תלמידות</h2>
+            <div class="grid-2">
+                <input type="text" id="new-student-name" placeholder="שם תלמידה חדשה...">
+                <div style="display: flex; gap: 8px;">
+                    <select id="new-student-group">
+                        <option value="א'">קבוצה א'</option>
+                        <option value="ב'">קבוצה ב'</option>
+                    </select>
+                    <button class="btn" onclick="addStudent()">הוסף</button>
+                </div>
+            </div>
+            <div id="students-manage-list" style="margin-top: 16px;"></div>
+
+            <!-- אזור גיבוי ושחזור נתונים -->
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 2px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <strong>גיבוי ועידכון בטוח:</strong>
+                    <div style="font-size: 13px; color: #64748b;">מומלץ לשמור גיבוי לפני עדכון קובץ האפליקציה במחשב.</div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="exportData()">📥 שמור גיבוי (קובץ)</button>
+                    <label class="btn" style="cursor: pointer; margin: 0; background: #0284c7;">
+                        📤 טען גיבוי
+                        <input type="file" accept=".json" style="display: none;" onchange="importData(event)">
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- לשונית 4: ניהול מורות -->
+        <div id="tab-teachers" class="card" style="display: none;">
+            <h2>ניהול מורות</h2>
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <input type="text" id="new-teacher-name" placeholder="שם מורה חדשה...">
+                <button class="btn" onclick="addTeacher()">הוסף מורה</button>
+            </div>
+            <div id="teachers-manage-list"></div>
+        </div>
+    </div>
+
+    <script>
+        let teachers = JSON.parse(localStorage.getItem('stars_teachers')) || ["תמר", "נוגה", "נס"];
+        let students = JSON.parse(localStorage.getItem('stars_students')) || [
+            { id: 1, name: "אביה כהן", group: "א'", active: true },
+            { id: 2, name: "תאיר לוי", group: "א'", active: true },
+            { id: 3, name: "שירה ישראלי", group: "ב'", active: true },
+            { id: 4, name: "הודיה אברהם", group: "ב'", active: true }
+        ];
+        let records = JSON.parse(localStorage.getItem('stars_records')) || {};
+        let hasUnsavedChanges = false;
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        document.getElementById('daily-date').value = todayStr;
+
+        function initApp() {
+            updateTeachersDropdown();
+            loadDayData();
+            updateDayOfWeek(todayStr);
+        }
+
+        function updateTeachersDropdown() {
+            const select = document.getElementById('teacher-select');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">בחרי מורה...</option>';
+            teachers.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.innerText = t;
+                select.appendChild(opt);
+            });
+            select.value = currentVal;
+        }
+
+        function updateDayOfWeek(dateStr) {
+            const dateObj = new Date(dateStr);
+            const days = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'יום שבת'];
+            const dayName = days[dateObj.getDay()];
+            document.getElementById('day-of-week-label').innerText = dayName;
+        }
+
+        function onDateChange() {
+            if (hasUnsavedChanges && !confirm("יש שינויים שלא נשמרו. לעבור לתאריך אחר?")) {
+                return;
+            }
+            const date = document.getElementById('daily-date').value;
+            updateDayOfWeek(date);
+            loadDayData();
+            hasUnsavedChanges = false;
+        }
+
+        function switchTab(tabName) {
+            if (hasUnsavedChanges && !confirm("יש שינויים שלא נשמרו. האם לעבור עמוד?")) {
+                return;
+            }
+            ['daily', 'dashboard', 'students', 'teachers'].forEach(t => {
+                document.getElementById('tab-' + t).style.display = t === tabName ? 'block' : 'none';
+            });
+            document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', ['daily', 'dashboard', 'students', 'teachers'][idx] === tabName);
+            });
+            if (tabName === 'dashboard') renderDashboard();
+            if (tabName === 'students') renderStudentsManage();
+            if (tabName === 'teachers') renderTeachersManage();
+            hasUnsavedChanges = false;
+        }
+
+        function renderDailyTable() {
+            const tbody = document.getElementById('students-table-body');
+            tbody.innerHTML = '';
+            const date = document.getElementById('daily-date').value;
+            const dayRecord = records[date] || { entries: {} };
+
+            const activeStudents = students.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+
+            activeStudents.forEach(s => {
+                const entry = dayRecord.entries[s.id] || { lesson1: 0, lesson2: 0, notes: '', teacher: '' };
+                const totalDaily = (Number(entry.lesson1) || 0) + (Number(entry.lesson2) || 0);
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${s.name}</strong> <span style="font-size:12px; color:#64748b;">(${s.group})</span></td>
+                    <td style="text-align:center;">
+                        <select class="star-select stars-${entry.lesson1}" onchange="updateEntry(${s.id}, 'lesson1', this.value)">
+                            <option value="0" ${entry.lesson1 == 0 ? 'selected' : ''}>0</option>
+                            <option value="1" ${entry.lesson1 == 1 ? 'selected' : ''}>1</option>
+                            <option value="2" ${entry.lesson1 == 2 ? 'selected' : ''}>2</option>
+                            <option value="3" ${entry.lesson1 == 3 ? 'selected' : ''}>3</option>
+                            <option value="4" ${entry.lesson1 == 4 ? 'selected' : ''}>4</option>
+                        </select>
+                    </td>
+                    <td style="text-align:center;">
+                        <select class="star-select stars-${entry.lesson2}" onchange="updateEntry(${s.id}, 'lesson2', this.value)">
+                            <option value="0" ${entry.lesson2 == 0 ? 'selected' : ''}>0</option>
+                            <option value="1" ${entry.lesson2 == 1 ? 'selected' : ''}>1</option>
+                            <option value="2" ${entry.lesson2 == 2 ? 'selected' : ''}>2</option>
+                            <option value="3" ${entry.lesson2 == 3 ? 'selected' : ''}>3</option>
+                            <option value="4" ${entry.lesson2 == 4 ? 'selected' : ''}>4</option>
+                        </select>
+                    </td>
+                    <td style="text-align:center; font-weight:bold; color:#4338ca;">
+                        ${totalDaily} ⭐️
+                    </td>
+                    <td>
+                        <input type="text" value="${entry.notes || ''}" placeholder="הערה..." onchange="updateEntry(${s.id}, 'notes', this.value)" style="font-size:12px; padding:6px;">
+                        ${entry.teacher ? `<div style="font-size:11px; color:#64748b; margin-top:2px;">עודכן ע"י: <strong>${entry.teacher}</strong></div>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateEntry(studentId, field, value) {
+            const date = document.getElementById('daily-date').value;
+            const currentTeacher = document.getElementById('teacher-select').value;
+
+            if (!records[date]) records[date] = { entries: {} };
+            if (!records[date].entries[studentId]) records[date].entries[studentId] = { lesson1: 0, lesson2: 0, notes: '', teacher: '' };
+
+            records[date].entries[studentId][field] = value;
+            if (currentTeacher) {
+                records[date].entries[studentId].teacher = currentTeacher;
+            }
+
+            markUnsavedChanges();
+            renderDailyTable();
+        }
+
+        function markUnsavedChanges() {
+            hasUnsavedChanges = true;
+        }
+
+        function saveDayData() {
+            const teacher = document.getElementById('teacher-select').value;
+            if (!teacher) {
+                alert('נא לבחור את שם המורה המדווחת לפני השמירה.');
+                return;
+            }
+
+            const date = document.getElementById('daily-date').value;
+            if (!records[date]) records[date] = { entries: {} };
+            records[date].notes = document.getElementById('daily-notes').value;
+            records[date].mainTeacher = teacher;
+
+            localStorage.setItem('stars_records', JSON.stringify(records));
+            hasUnsavedChanges = false;
+            showToast();
+        }
+
+        function loadDayData() {
+            const date = document.getElementById('daily-date').value;
+            const dayRecord = records[date] || { notes: '', mainTeacher: '' };
+            document.getElementById('daily-notes').value = dayRecord.notes || '';
+            document.getElementById('teacher-select').value = dayRecord.mainTeacher || '';
+            renderDailyTable();
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.style.display = 'inline-block';
+            setTimeout(() => toast.style.display = 'none', 1500);
+        }
+
+        window.addEventListener('beforeunload', (e) => {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        function renderDashboard() {
+            const tbody = document.getElementById('dashboard-table-body');
+            tbody.innerHTML = '';
+
+            const activeStudents = students.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+
+            activeStudents.forEach(s => {
+                let total = 0;
+                Object.values(records).forEach(r => {
+                    if (r.entries && r.entries[s.id]) {
+                        total += (Number(r.entries[s.id].lesson1) || 0) + (Number(r.entries[s.id].lesson2) || 0);
+                    }
+                });
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${s.name}</strong></td>
+                    <td>${s.group}</td>
+                    <td style="text-align:center; font-weight:bold; color:#4338ca;">${total} ⭐️</td>
+                    <td style="text-align:center; font-weight:bold; color:#16a34a;">₪${total * 2}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderStudentsManage() {
+            const list = document.getElementById('students-manage-list');
+            list.innerHTML = '';
+            students.forEach(s => {
+                const item = document.createElement('div');
+                item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #e2e8f0;';
+                item.innerHTML = `
+                    <div>
+                        <strong>${s.name}</strong> (${s.group}) - 
+                        <span style="color:${s.active ? 'green' : 'gray'}">${s.active ? 'פעילה' : 'לא פעילה'}</span>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm" onclick="toggleStudent(${s.id})">${s.active ? 'הפוך ללא פעילה' : 'הפעל'}</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function addStudent() {
+            const name = document.getElementById('new-student-name').value.trim();
+            const group = document.getElementById('new-student-group').value;
+            if (!name) return;
+
+            students.push({ id: Date.now(), name, group, active: true });
+            localStorage.setItem('stars_students', JSON.stringify(students));
+            document.getElementById('new-student-name').value = '';
+            renderStudentsManage();
+            renderDailyTable();
+        }
+
+        function toggleStudent(id) {
+            students = students.map(s => s.id === id ? { ...s, active: !s.active } : s);
+            localStorage.setItem('stars_students', JSON.stringify(students));
+            renderStudentsManage();
+            renderDailyTable();
+        }
+
+        function renderTeachersManage() {
+            const list = document.getElementById('teachers-manage-list');
+            list.innerHTML = '';
+            teachers.forEach(t => {
+                const item = document.createElement('div');
+                item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #e2e8f0;';
+                item.innerHTML = `
+                    <span>👩‍🏫 <strong>${t}</strong></span>
+                    <button class="btn btn-sm btn-danger" onclick="removeTeacher('${t}')">הסר</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function addTeacher() {
+            const name = document.getElementById('new-teacher-name').value.trim();
+            if (!name || teachers.includes(name)) return;
+            teachers.push(name);
+            localStorage.setItem('stars_teachers', JSON.stringify(teachers));
+            document.getElementById('new-teacher-name').value = '';
+            renderTeachersManage();
+            updateTeachersDropdown();
+        }
+
+        function removeTeacher(name) {
+            teachers = teachers.filter(t => t !== name);
+            localStorage.setItem('stars_teachers', JSON.stringify(teachers));
+            renderTeachersManage();
+            updateTeachersDropdown();
+        }
+
+        // פונקציות גיבוי ושחזור נתונים
+        function exportData() {
+            const backupData = {
+                students: students,
+                teachers: teachers,
+                records: records,
+                date: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'stars_backup_' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.students) {
+                        students = data.students;
+                        localStorage.setItem('stars_students', JSON.stringify(students));
+                    }
+                    if (data.teachers) {
+                        teachers = data.teachers;
+                        localStorage.setItem('stars_teachers', JSON.stringify(teachers));
+                    }
+                    if (data.records) {
+                        records = data.records;
+                        localStorage.setItem('stars_records', JSON.stringify(records));
+                    }
+                    alert('הנתונים שוחזרו בהצלחה!');
+                    location.reload();
+                } catch (err) {
+                    alert('שגיאה בקריאת קובץ הגיבוי. ודאי שמדובר בקובץ תקין.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
