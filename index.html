@@ -1,362 +1,115 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>שיטת הכוכבים - צוות מורות</title>
-    <style>
-        * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
-        body { background-color: #f8fafc; color: #1e293b; margin: 0; padding: 16px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-        h1 { margin: 0; color: #4338ca; font-size: 22px; display: flex; align-items: center; gap: 10px; }
-        .version-badge { background: #e0e7ff; color: #3730a3; font-size: 12px; padding: 3px 8px; border-radius: 12px; font-weight: normal; }
-        .nav-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; background: #e2e8f0; padding: 4px; border-radius: 12px; }
-        .tab-btn { flex: 1; padding: 10px 14px; border: none; background: transparent; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; font-size: 14px; color: #475569; }
-        .tab-btn.active { background: white; color: #4338ca; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .grid-2, .grid-3 { display: grid; gap: 16px; margin-bottom: 16px; }
-        .grid-2 { grid-template-columns: 1fr 1fr; }
-        .grid-3 { grid-template-columns: repeat(3, 1fr); }
-        @media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
-        label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: white; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-        th { background: #f1f5f9; color: #334155; cursor: pointer; user-select: none; }
-        th:hover { background: #e2e8f0; }
-        
-        .star-select { width: 65px; text-align: center; font-weight: bold; border-radius: 8px; padding: 8px; border: 1px solid #cbd5e1; cursor: pointer; transition: all 0.2s; }
-        .stars-0 { background-color: #f1f5f9; color: #94a3b8; }
-        .stars-1 { background-color: #fef9c3; color: #854d0e; }
-        .stars-2 { background-color: #fef08a; color: #713f12; }
-        .stars-3 { background-color: #bbf7d0; color: #166534; }
-        .stars-4 { background-color: #86efac; color: #14532d; }
-
-        .btn { background: #4338ca; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn:hover { background: #3730a3; }
-        .btn-success { background: #16a34a; }
-        .btn-success:hover { background: #15803d; }
-        .btn-secondary { background: #64748b; }
-        .btn-secondary:hover { background: #475569; }
-        .btn-danger { background: #ef4444; }
-        .btn-danger:hover { background: #dc2626; }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
-        
-        .badge { background: #dcfce7; color: #166534; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; display: none; }
-        .day-display { font-size: 13px; color: #64748b; margin-top: 2px; font-weight: 500; }
-        .teacher-meta { font-size: 11px; color: #64748b; margin-top: 3px; font-weight: 500; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>שיטת הכוכבים</title>
+<style>
+  :root {
+    --bg: #fbf8ff;
+    --ink: #2b2540;
+    --muted: #6d6685;
+    --accent: #5b3fd1;
+    --ok: #1f9d55;
+    --bad: #c0392b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Arial Hebrew", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  header {
+    padding: 20px 24px;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  header h1 { margin: 0; font-size: 1.6rem; }
+  .version { font-size: .85rem; opacity: .8; direction: ltr; }
+  main { max-width: 560px; margin: 32px auto; padding: 0 20px; }
+  .card {
+    background: #fff;
+    border: 1px solid #e3dcf5;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .status { font-size: 1.1rem; font-weight: 600; }
+  .ok { color: var(--ok); }
+  .bad { color: var(--bad); }
+  button {
+    font: inherit;
+    padding: 10px 20px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  button:focus-visible { outline: 3px solid #b7a6f5; outline-offset: 2px; }
+  .hint { color: var(--muted); font-size: .9rem; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <!-- כותרת -->
-        <div class="card">
-            <div class="header">
-                <div>
-                    <h1>
-                        ⭐️ שיטת הכוכבים - צוות מורות
-                        <span class="version-badge">גרסה v1.7</span>
-                    </h1>
-                    <span style="font-size: 13px; color: #64748b;">מעקב כוכבים שיתופי יומי וחודשי</span>
-                </div>
-                <div id="toast" class="badge">✓ נשמר בהצלחה!</div>
-            </div>
+<header>
+  <h1>שיטת הכוכבים</h1>
+  <span class="version" id="version"></span>
+</header>
 
-            <!-- סרגל ניווט -->
-            <div class="nav-tabs">
-                <button class="tab-btn active" id="btn-daily" onclick="switchTab('daily')">📝 הזנת כוכבים יומית</button>
-                <button class="tab-btn" id="btn-dashboard" onclick="switchTab('dashboard')">📊 דשבורד ודוחות</button>
-                <button class="tab-btn" id="btn-students" onclick="switchTab('students')">👩‍🎓 ניהול תלמידות</button>
-                <button class="tab-btn" id="btn-teachers" onclick="switchTab('teachers')">👩‍🏫 ניהול מורות</button>
-            </div>
-        </div>
+<main>
+  <div class="card">
+    <p>בדיקת חיבור לענן</p>
+    <p class="status" id="status">בודק חיבור...</p>
+    <button id="retry" type="button">בדיקה חוזרת</button>
+  </div>
+  <p class="hint">זה מסך בדיקה זמני. אחרי שהוא מציג "החיבור תקין", ממשיכים לשלב הבא.</p>
+</main>
 
-        <!-- לשונית 1: הזנת כוכבים יומית -->
-        <div id="tab-daily" class="card tab-content active">
-            <div class="grid-2">
-                <div>
-                    <label>תאריך (שדה חובה):</label>
-                    <input type="date" id="daily-date" onchange="onDateChange()">
-                    <div id="day-of-week-label" class="day-display"></div>
-                </div>
-                <div>
-                    <label>שם המורה המדווחת (שדה חובה):</label>
-                    <select id="teacher-select" onchange="markUnsavedChanges()">
-                        <option value="">בחרי מורה...</option>
-                    </select>
-                </div>
-            </div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-            <div style="overflow-x: auto; margin-top: 20px;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>שם התלמידה</th>
-                            <th>קבוצה / כיתה</th>
-                            <th style="text-align: center;">שיעור 1 (0-4)</th>
-                            <th style="text-align: center;">שיעור 2 (0-4)</th>
-                            <th style="text-align: center;">סה"כ יומי</th>
-                            <th>הערות</th>
-                        </tr>
-                    </thead>
-                    <tbody id="students-table-body">
-                        <!-- מתווסף מ-JavaScript -->
-                    </tbody>
-                </table>
-            </div>
+  const APP_VERSION = "0.1.0";
+  document.getElementById("version").textContent = "גרסה " + APP_VERSION;
 
-            <div style="margin-top: 16px;">
-                <label>הערות כלליות ליום הלימודים:</label>
-                <textarea id="daily-notes" rows="2" placeholder="הערות מיוחדות ליום זה..." oninput="markUnsavedChanges()"></textarea>
-            </div>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtvS1XsCzq5M8bwEMAp-zmO5-eCBuIDEo",
+    authDomain: "school-stars-5efd8.firebaseapp.com",
+    projectId: "school-stars-5efd8",
+    storageBucket: "school-stars-5efd8.firebasestorage.app",
+    messagingSenderId: "944955455671",
+    appId: "1:944955455671:web:3b2cf362ca6fb6a9f9f532"
+  };
 
-            <div style="text-align: left; margin-top: 16px;">
-                <button class="btn" onclick="saveDayData()">שמרי נתוני יום 💾</button>
-            </div>
-        </div>
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const statusEl = document.getElementById("status");
 
-        <!-- לשונית 2: דשבורד ודוחות -->
-        <div id="tab-dashboard" class="card tab-content">
-            <h2>דשבורד וסיכום נתונים</h2>
-            
-            <!-- אזור סינונים -->
-            <div style="background: #f1f5f9; padding: 16px; border-radius: 12px; margin-bottom: 20px;">
-                <h3 style="margin-top: 0; font-size: 15px; color: #334155;">סינון נתונים:</h3>
-                <div class="grid-3">
-                    <div>
-                        <label>חודש:</label>
-                        <input type="month" id="filter-month" onchange="renderDashboard()">
-                    </div>
-                    <div>
-                        <label>קבוצה:</label>
-                        <select id="filter-group" onchange="renderDashboard()" multiple style="height: 42px;">
-                            <option value="א'">קבוצה א'</option>
-                            <option value="ב'">קבוצה ב'</option>
-                        </select>
-                        <span style="font-size: 11px; color: #64748b;">(ניתן ללחוץ Ctrl לבחירה מרובה)</span>
-                    </div>
-                    <div>
-                        <label>כיתה:</label>
-                        <select id="filter-class" onchange="renderDashboard()">
-                            <option value="">כל הכיתות</option>
-                            <option value="ז'">ז'</option>
-                            <option value="ח'">ח'</option>
-                            <option value="ט'">ט'</option>
-                            <option value="י'">י'</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="grid-2" style="margin-top: 10px;">
-                    <div>
-                        <label>מורה מעדכנת:</label>
-                        <select id="filter-teacher" onchange="renderDashboard()">
-                            <option value="">כל המורות</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>מקצוע לימוד:</label>
-                        <select id="filter-subject" onchange="renderDashboard()">
-                            <option value="">כל המקצועות</option>
-                            <option value="עברית">עברית</option>
-                            <option value="אנגלית">אנגלית</option>
-                            <option value="מתמטיקה">מתמטיקה</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+  async function checkConnection() {
+    statusEl.className = "status";
+    statusEl.textContent = "בודק חיבור...";
+    try {
+      const ref = doc(db, "healthcheck", "ping");
+      await setDoc(ref, { version: APP_VERSION, at: serverTimestamp() });
+      const snap = await getDoc(ref);
+      if (!snap.exists()) throw new Error("המסמך לא נמצא");
+      statusEl.className = "status ok";
+      statusEl.textContent = "החיבור תקין. הנתונים נשמרים בענן.";
+    } catch (err) {
+      statusEl.className = "status bad";
+      statusEl.textContent = "החיבור נכשל: " + err.message;
+      console.error(err);
+    }
+  }
 
-            <table>
-                <thead>
-                    <tr>
-                        <th onclick="sortTable('name')">שם התלמידה ↕</th>
-                        <th onclick="sortTable('group')">קבוצה ↕</th>
-                        <th onclick="sortTable('className')">כיתה ↕</th>
-                        <th style="text-align: center;" onclick="sortTable('total')">סה"כ כוכבים ↕</th>
-                        <th style="text-align: center;" onclick="sortTable('pocket')">דמי כיס משוערים ↕</th>
-                    </tr>
-                </thead>
-                <tbody id="dashboard-table-body">
-                    <!-- מתווסף מ-JavaScript -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- לשונית 3: ניהול תלמידות -->
-        <div id="tab-students" class="card tab-content">
-            <h2>ניהול תלמידות</h2>
-            <div class="grid-3">
-                <input type="text" id="new-student-name" placeholder="שם תלמידה חדשה...">
-                <select id="new-student-group">
-                    <option value="א'">קבוצה א'</option>
-                    <option value="ב'">קבוצה ב'</option>
-                </select>
-                <div style="display: flex; gap: 8px;">
-                    <select id="new-student-class">
-                        <option value="ז'">כיתה ז'</option>
-                        <option value="ח'">כיתה ח'</option>
-                        <option value="ט'">כיתה ט'</option>
-                        <option value="י'">כיתה י'</option>
-                    </select>
-                    <button class="btn" onclick="addStudent()">הוסיפי</button>
-                </div>
-            </div>
-            <div id="students-manage-list" style="margin-top: 16px;"></div>
-
-            <!-- גיבוי ושחזור -->
-            <div style="margin-top: 30px; padding-top: 20px; border-top: 2px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div>
-                    <strong>שמירת וגיבוי נתונים:</strong>
-                    <div style="font-size: 13px; color: #64748b;">מומלץ לשמור קובץ גיבוי מעת לעת להבטחת בטחון המידע.</div>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-success" onclick="exportData()">📥 שמרי גיבוי (קובץ)</button>
-                    <label class="btn btn-secondary" style="cursor: pointer; margin: 0;">
-                        📤 טעני גיבוי
-                        <input type="file" accept=".json" style="display: none;" onchange="importData(event)">
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- לשונית 4: ניהול מורות -->
-        <div id="tab-teachers" class="card tab-content">
-            <h2>ניהול צוות מורות</h2>
-            <div class="grid-3" style="margin-bottom: 16px;">
-                <input type="text" id="new-teacher-name" placeholder="שם מורה חדשה...">
-                <select id="new-teacher-subject">
-                    <option value="עברית">עברית</option>
-                    <option value="אנגלית">אנגלית</option>
-                    <option value="מתמטיקה">מתמטיקה</option>
-                </select>
-                <button class="btn" onclick="addTeacher()">הוסיפי מורה</button>
-            </div>
-            <div id="teachers-manage-list"></div>
-        </div>
-    </div>
-
-    <script>
-        // הגדרת משתנים גלובליים
-        let teachers = JSON.parse(localStorage.getItem('stars_teachers_v2')) || [
-            { name: "תמר", subject: "מתמטיקה", active: true },
-            { name: "נוגה", subject: "עברית", active: true },
-            { name: "נס", subject: "אנגלית", active: true }
-        ];
-        let students = JSON.parse(localStorage.getItem('stars_students_v2')) || [];
-        let records = JSON.parse(localStorage.getItem('stars_records_v2')) || {};
-        let hasUnsavedChanges = false;
-        let currentSortField = 'name';
-        let sortAscending = true;
-
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        // הרצה מיידית באתחול העמוד
-        window.onload = function() {
-            document.getElementById('daily-date').value = todayStr;
-            document.getElementById('filter-month').value = todayStr.substring(0, 7);
-            initApp();
-        };
-
-        function initApp() {
-            updateTeachersDropdown();
-            loadDayData();
-            updateDayOfWeek(todayStr);
-            renderDailyTable();
-        }
-
-        function updateTeachersDropdown() {
-            const select = document.getElementById('teacher-select');
-            const filterSelect = document.getElementById('filter-teacher');
-            if(!select || !filterSelect) return;
-
-            const currentVal = select.value;
-            const currentFilter = filterSelect.value;
-
-            select.innerHTML = '<option value="">בחרי מורה...</option>';
-            filterSelect.innerHTML = '<option value="">כל המורות</option>';
-
-            teachers.filter(t => t.active).forEach(t => {
-                const opt1 = document.createElement('option');
-                opt1.value = t.name;
-                opt1.innerText = `${t.name} (${t.subject})`;
-                select.appendChild(opt1);
-
-                const opt2 = document.createElement('option');
-                opt2.value = t.name;
-                opt2.innerText = t.name;
-                filterSelect.appendChild(opt2);
-            });
-            select.value = currentVal;
-            filterSelect.value = currentFilter;
-        }
-
-        function updateDayOfWeek(dateStr) {
-            const dateObj = new Date(dateStr);
-            const days = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'יום שבת'];
-            const lbl = document.getElementById('day-of-week-label');
-            if(lbl) lbl.innerText = days[dateObj.getDay()];
-        }
-
-        function onDateChange() {
-            if (hasUnsavedChanges && !confirm("יש שינויים שלא נשמרו. האם לעבור לתאריך אחר?")) return;
-            const date = document.getElementById('daily-date').value;
-            updateDayOfWeek(date);
-            loadDayData();
-            hasUnsavedChanges = false;
-        }
-
-        // מעבר בין לשוניות (גלובלי)
-        window.switchTab = function(tabName) {
-            if (hasUnsavedChanges && !confirm("יש שינויים שלא נשמרו. האם לעבור עמוד?")) return;
-            
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-
-            const targetContent = document.getElementById('tab-' + tabName);
-            if (targetContent) targetContent.classList.add('active');
-
-            const targetBtn = document.getElementById('btn-' + tabName);
-            if (targetBtn) targetBtn.classList.add('active');
-
-            if (tabName === 'dashboard') renderDashboard();
-            if (tabName === 'students') renderStudentsManage();
-            if (tabName === 'teachers') renderTeachersManage();
-            hasUnsavedChanges = false;
-        }
-
-        function renderDailyTable() {
-            const tbody = document.getElementById('students-table-body');
-            if(!tbody) return;
-            tbody.innerHTML = '';
-            const date = document.getElementById('daily-date').value;
-            const dayRecord = records[date] || { entries: {} };
-
-            const activeStudents = students.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name, 'he'));
-
-            if (activeStudents.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:20px;">טרם הוגדרו תלמידות פעילות. ניתן להוסיף תלמידות בלשונית "ניהול תלמידות".</td></tr>`;
-                return;
-            }
-
-            activeStudents.forEach(s => {
-                const entry = dayRecord.entries[s.id] || { lesson1: 0, lesson2: 0, notes: '', teacher1: '', teacher2: '' };
-                const totalDaily = (Number(entry.lesson1) || 0) + (Number(entry.lesson2) || 0);
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><strong>${s.name}</strong></td>
-                    <td>${s.group} \vert{}${s.className || 'ז\''}</td>
-                    <td style="text-align:center;">
-                        <select class="star-select stars-${entry.lesson1}" onchange="updateEntry(${s.id}, 'lesson1', this.value)">
-                            <option value="0" ${entry.lesson1 == 0 ? 'selected' : ''}>0</option>
-                            <option value="1" ${entry.lesson1 == 1 ? 'selected' : ''}>1</option>
-                            <option value="2" ${entry.lesson1 == 2 ? 'selected' : ''}>2</option>
-                            <option value="3" ${entry.lesson1 == 3 ? 'selected' : ''}>3</option>
-                            <option value="4" ${entry.lesson1 == 4 ? 'selected' : ''}>4</option>
-                        </select>
-                        <div class="teacher-meta">${entry.teacher1 ? 'ע"י: ' + entry.teacher1 : ''}</div>
-                    </td>
-                    <td style="text-align:center;">
-                        <select class="star-select stars-${entry.lesson2}"
+  document.getElementById("retry").addEventListener("click", checkConnection);
+  checkConnection();
+</script>
+</body>
+</html>
