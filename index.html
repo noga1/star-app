@@ -131,6 +131,8 @@
   .row .actions { display: flex; gap: 8px; }
   .row.off .name, .row.off .sub { color: #9a95ad; }
   .row .inp { flex: 1 1 130px; width: auto; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row select.inp { flex: 0 1 110px; }
   #toast {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
     background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px;
@@ -155,7 +157,7 @@
   import { getFirestore, collection, addDoc, updateDoc, doc, onSnapshot, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  const APP_VERSION = "0.2.0";
+  const APP_VERSION = "0.3.0";
   const firebaseConfig = {
     apiKey: "AIzaSyBtvS1XsCzq5M8bwEMAp-zmO5-eCBuIDEo",
     authDomain: "school-stars-5efd8.firebaseapp.com",
@@ -187,18 +189,33 @@
 
   /* ---------- מצב ---------- */
   const S = {
-    code: null, teachers: [], loaded: false, error: "",
+    code: null, teachers: [], students: [], loaded: false, error: "",
     teacherId: store.get(LS.teacher), tab: "home", editingId: null, pending: false
   };
-  let unsub = null;
+  let unsub = null, unsubStudents = null;
   const teachersCol = () => collection(db, "teams", S.code, "teachers");
   const teacherDoc = (id) => doc(db, "teams", S.code, "teachers", id);
+  const studentsCol = () => collection(db, "teams", S.code, "students");
+  const studentDoc = (id) => doc(db, "teams", S.code, "students", id);
+  const GRADES = ["ז'", "ח'", "ט'", "י'", 'י"א'];
+  const GROUPS = ["א'", "ב'"];
+  const gradeIdx = (g) => { const i = GRADES.indexOf(g); return i < 0 ? 99 : i; };
   const isActive = (t) => t.active !== false;
   const currentTeacher = () => S.teachers.find((t) => t.id === S.teacherId && isActive(t));
 
   function connect(code) {
     if (unsub) unsub();
+    if (unsubStudents) unsubStudents();
     S.code = code; S.loaded = false; S.error = "";
+    unsubStudents = onSnapshot(studentsCol(), (snap) => {
+      S.students = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => gradeIdx(a.grade) - gradeIdx(b.grade)
+          || String(a.group).localeCompare(String(b.group), "he")
+          || String(a.name).localeCompare(String(b.name), "he"));
+      if (!S.loaded || typingNow()) { if (S.loaded) S.pending = true; return; }
+      render();
+    }, (err) => console.error(err));
     unsub = onSnapshot(teachersCol(), (snap) => {
       S.teachers = snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
@@ -224,8 +241,9 @@
 
   function signOutDevice() {
     if (unsub) unsub();
+    if (unsubStudents) unsubStudents();
     store.del(LS.code); store.del(LS.teacher);
-    S.code = null; S.loaded = false; S.teachers = []; S.teacherId = null; S.error = "";
+    S.code = null; S.loaded = false; S.teachers = []; S.students = []; S.teacherId = null; S.error = "";
     render();
   }
 
@@ -327,9 +345,60 @@
       <p class="hint">מורה שהפכה ללא פעילה לא מופיעה במסך הכניסה, אבל הכוכבים שחילקה נשמרים.</p>`;
   }
 
+  const options = (arr, sel, placeholder) =>
+    (placeholder ? `<option value="">${placeholder}</option>` : "") +
+    arr.map((v) => `<option value="${esc(v)}" ${v === sel ? "selected" : ""}>${esc(v)}</option>`).join("");
+
+  function studentForm() {
+    return `<form id="studentForm">
+      <div class="field"><label for="sName">שם התלמידה</label><input class="inp" id="sName" autocomplete="off" required></div>
+      <div class="two">
+        <div class="field"><label for="sGrade">כיתה</label><select class="inp" id="sGrade" required>${options(GRADES, "", "בחירה...")}</select></div>
+        <div class="field"><label for="sGroup">קבוצה</label><select class="inp" id="sGroup" required>${options(GROUPS, "", "בחירה...")}</select></div>
+      </div>
+      <button class="btn" type="submit">הוספה</button>
+    </form>`;
+  }
+
+  function studentRow(s) {
+    const on = isActive(s);
+    if (S.editingId === s.id) {
+      return `<div class="row">
+        <input class="inp" id="editStName" value="${esc(s.name)}" aria-label="שם">
+        <select class="inp" id="editStGrade" aria-label="כיתה">${options(GRADES, s.grade)}</select>
+        <select class="inp" id="editStGroup" aria-label="קבוצה">${options(GROUPS, s.group)}</select>
+        <div class="actions">
+          <button class="btn small" data-action="save-student" data-id="${s.id}">שמירה</button>
+          <button class="btn small secondary" data-action="cancel-edit">ביטול</button>
+        </div></div>`;
+    }
+    return `<div class="row ${on ? "" : "off"}">
+      <span class="name">${esc(s.name)}</span><span class="sub">כיתה ${esc(s.grade)}, קבוצה ${esc(s.group)}</span>
+      <div class="actions">
+        <button class="btn small secondary" data-action="edit" data-id="${s.id}">עריכה</button>
+        <button class="btn small secondary" data-action="toggle-student" data-id="${s.id}">${on ? "הפיכה ללא פעילה" : "הפעלה מחדש"}</button>
+      </div></div>`;
+  }
+
+  function studentsScreen() {
+    const active = S.students.filter(isActive);
+    const inactive = S.students.filter((s) => !isActive(s));
+    const byGrade = GRADES.map((g) => [g, active.filter((s) => s.grade === g)]).filter(([, l]) => l.length);
+    return `<h2>ניהול תלמידות</h2>
+      <div class="card"><h3 style="margin-top:0">הוספת תלמידה</h3>${studentForm()}</div>
+      <div class="card">
+        <p class="hint" style="margin-top:0">${active.length} תלמידות פעילות</p>
+        ${byGrade.map(([g, l]) => `<h3>כיתה ${esc(g)}</h3>${l.map(studentRow).join("")}`).join("")
+          || '<p class="center">עוד לא נוספו תלמידות.</p>'}
+        ${inactive.length ? `<h3>לא פעילות</h3>${inactive.map(studentRow).join("")}` : ""}
+      </div>
+      <p class="hint">תלמידה שהפכה ללא פעילה לא תופיע בטופס היומי, אבל הכוכבים שצברה נשמרים.</p>`;
+  }
+
   function tabContent() {
     if (S.tab === "teachers") return teachersScreen();
-    const names = { home: "דף הבית", dashboard: "הדשבורד", students: "ניהול התלמידות" };
+    if (S.tab === "students") return studentsScreen();
+    const names = { home: "דף הבית", dashboard: "הדשבורד" };
     return `<div class="card center"><h2>${names[S.tab]}</h2><p>המסך הזה ייבנה בשלב הבא.</p></div>`;
   }
 
@@ -363,6 +432,36 @@
     catch (e) { console.error(e); toast("הפעולה נכשלה. נסי שוב.", true); }
   }
 
+  async function addStudent(name, grade, group) {
+    name = name.trim();
+    if (!name || !grade || !group) return toast("יש למלא שם, כיתה וקבוצה", true);
+    if (S.students.some((s) => s.name === name && s.grade === grade)) return toast("כבר קיימת תלמידה בשם הזה באותה כיתה", true);
+    try {
+      await addDoc(studentsCol(), { name, grade, group, active: true, createdAt: serverTimestamp() });
+      toast("התלמידה נוספה");
+    } catch (e) { console.error(e); toast("השמירה נכשלה. נסי שוב.", true); }
+  }
+
+  async function saveStudent(id) {
+    const name = $("#editStName").value.trim();
+    const grade = $("#editStGrade").value;
+    const group = $("#editStGroup").value;
+    if (!name) return toast("יש להזין שם", true);
+    if (S.students.some((s) => s.id !== id && s.name === name && s.grade === grade)) return toast("כבר קיימת תלמידה בשם הזה באותה כיתה", true);
+    try {
+      await updateDoc(studentDoc(id), { name, grade, group });
+      S.editingId = null; render(); toast("השינויים נשמרו");
+    } catch (e) { console.error(e); toast("השמירה נכשלה. נסי שוב.", true); }
+  }
+
+  async function toggleStudent(id) {
+    const s = S.students.find((x) => x.id === id);
+    if (!s) return;
+    if (isActive(s) && !confirm(`להפוך את ${s.name} ללא פעילה?\nהנתונים שלה יישמרו.`)) return;
+    try { await updateDoc(studentDoc(id), { active: !isActive(s) }); }
+    catch (e) { console.error(e); toast("הפעולה נכשלה. נסי שוב.", true); }
+  }
+
   /* ---------- אירועים ---------- */
   document.body.addEventListener("click", (e) => {
     const b = e.target.closest("[data-action]");
@@ -376,6 +475,8 @@
     else if (action === "cancel-edit") { S.editingId = null; render(); }
     else if (action === "save-edit") saveEdit(id);
     else if (action === "toggle") toggleActive(id);
+    else if (action === "save-student") saveStudent(id);
+    else if (action === "toggle-student") toggleStudent(id);
     else if (action === "retry") connect(S.code);
   });
 
@@ -391,6 +492,8 @@
       connect(raw);
     } else if (e.target.id === "teacherForm") {
       addTeacher($("#tName").value, $("#tSubject").value);
+    } else if (e.target.id === "studentForm") {
+      addStudent($("#sName").value, $("#sGrade").value, $("#sGroup").value);
     }
   });
 
