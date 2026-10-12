@@ -1,83 +1,44 @@
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>שיטת הכוכבים</title>
-<style>
-  :root {
-    --bg: #fbf8ff;
-    --ink: #2b2540;
-    --muted: #6d6685;
-    --accent: #5b3fd1;
-    --ok: #1f9d55;
-    --bad: #c0392b;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: "Segoe UI", "Arial Hebrew", Arial, sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-    line-height: 1.6;
-  }
-  header {
-    padding: 20px 24px;
-    background: var(--accent);
-    color: #fff;
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-  }
-  header h1 { margin: 0; font-size: 1.6rem; }
-  .version { font-size: .85rem; opacity: .8; direction: ltr; }
-  main { max-width: 560px; margin: 32px auto; padding: 0 20px; }
-  .card {
-    background: #fff;
-    border: 1px solid #e3dcf5;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 16px;
-  }
-  .status { font-size: 1.1rem; font-weight: 600; }
-  .ok { color: var(--ok); }
-  .bad { color: var(--bad); }
-  button {
-    font: inherit;
-    padding: 10px 20px;
-    border: 0;
-    border-radius: 8px;
-    background: var(--accent);
-    color: #fff;
+	nd: #fff;
     cursor: pointer;
+    text-align: center;
   }
-  button:focus-visible { outline: 3px solid #b7a6f5; outline-offset: 2px; }
-  .hint { color: var(--muted); font-size: .9rem; }
+  .pick:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .pick .nm { display: block; font-weight: 700; }
+  .pick .sb { display: block; color: var(--muted); font-size: .9rem; }
+  .row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px 12px; padding: 12px 0; border-bottom: 1px solid var(--line);
+  }
+  .row .name { font-weight: 700; flex: 1 1 130px; }
+  .row .sub { color: var(--muted); flex: 1 1 110px; }
+  .row .actions { display: flex; gap: 8px; }
+  .row.off .name, .row.off .sub { color: #9a95ad; }
+  .row .inp { flex: 1 1 130px; width: auto; }
+  #toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px;
+    opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 90vw;
+  }
+  #toast.show { opacity: 1; }
+  #toast.bad { background: var(--bad); }
 </style>
 </head>
 <body>
 <header>
-  <h1>שיטת הכוכבים</h1>
+  <h1><span class="star">★</span> שיטת הכוכבים</h1>
   <span class="version" id="version"></span>
+  <div id="who"></div>
 </header>
-
-<main>
-  <div class="card">
-    <p>בדיקת חיבור לענן</p>
-    <p class="status" id="status">בודק חיבור...</p>
-    <button id="retry" type="button">בדיקה חוזרת</button>
-  </div>
-  <p class="hint">זה מסך בדיקה זמני. אחרי שהוא מציג "החיבור תקין", ממשיכים לשלב הבא.</p>
-</main>
+<nav id="tabs" aria-label="תפריט ראשי" hidden></nav>
+<main id="app"></main>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, doc, setDoc, getDoc, serverTimestamp }
+  import { getFirestore, collection, addDoc, updateDoc, doc, onSnapshot, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  const APP_VERSION = "0.1.0";
-  document.getElementById("version").textContent = "גרסה " + APP_VERSION;
-
+  const APP_VERSION = "0.2.0";
   const firebaseConfig = {
     apiKey: "AIzaSyBtvS1XsCzq5M8bwEMAp-zmO5-eCBuIDEo",
     authDomain: "school-stars-5efd8.firebaseapp.com",
@@ -86,30 +47,246 @@
     messagingSenderId: "944955455671",
     appId: "1:944955455671:web:3b2cf362ca6fb6a9f9f532"
   };
+  const db = getFirestore(initializeApp(firebaseConfig));
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const statusEl = document.getElementById("status");
-
-  async function checkConnection() {
-    statusEl.className = "status";
-    statusEl.textContent = "בודק חיבור...";
-    try {
-      const ref = doc(db, "healthcheck", "ping");
-      await setDoc(ref, { version: APP_VERSION, at: serverTimestamp() });
-      const snap = await getDoc(ref);
-      if (!snap.exists()) throw new Error("המסמך לא נמצא");
-      statusEl.className = "status ok";
-      statusEl.textContent = "החיבור תקין. הנתונים נשמרים בענן.";
-    } catch (err) {
-      statusEl.className = "status bad";
-      statusEl.textContent = "החיבור נכשל: " + err.message;
-      console.error(err);
-    }
+  /* ---------- עזרים ---------- */
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const LS = { code: "stars.code", teacher: "stars.teacher" };
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+    del(k) { try { localStorage.removeItem(k); } catch {} }
+  };
+  let toastTimer;
+  function toast(text, bad = false) {
+    const t = $("#toast");
+    t.textContent = text;
+    t.className = "show" + (bad ? " bad" : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = ""; }, 3500);
   }
 
-  document.getElementById("retry").addEventListener("click", checkConnection);
-  checkConnection();
+  /* ---------- מצב ---------- */
+  const S = {
+    code: null, teachers: [], loaded: false, error: "",
+    teacherId: store.get(LS.teacher), tab: "home", editingId: null, pending: false
+  };
+  let unsub = null;
+  const teachersCol = () => collection(db, "teams", S.code, "teachers");
+  const teacherDoc = (id) => doc(db, "teams", S.code, "teachers", id);
+  const isActive = (t) => t.active !== false;
+  const currentTeacher = () => S.teachers.find((t) => t.id === S.teacherId && isActive(t));
+
+  function connect(code) {
+    if (unsub) unsub();
+    S.code = code; S.loaded = false; S.error = "";
+    unsub = onSnapshot(teachersCol(), (snap) => {
+      S.teachers = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => String(a.name).localeCompare(String(b.name), "he"));
+      S.loaded = true;
+      store.set(LS.code, code);
+      if (typingNow()) { S.pending = true; return; }
+      render();
+    }, (err) => {
+      if (err.code === "permission-denied") {
+        store.del(LS.code); S.code = null; S.error = "הקוד שגוי. נסי שוב.";
+      } else {
+        S.error = "אין חיבור לענן. בדקי את החיבור לאינטרנט.";
+      }
+      render();
+    });
+  }
+
+  function typingNow() {
+    const a = document.activeElement;
+    return !!(a && a.tagName === "INPUT" && a.closest("#app"));
+  }
+
+  function signOutDevice() {
+    if (unsub) unsub();
+    store.del(LS.code); store.del(LS.teacher);
+    S.code = null; S.loaded = false; S.teachers = []; S.teacherId = null; S.error = "";
+    render();
+  }
+
+  /* ---------- תצוגה ---------- */
+  const TABS = [["home", "דף הבית"], ["dashboard", "דשבורד"], ["teachers", "מורות"], ["students", "תלמידות"]];
+
+  function render() {
+    S.pending = false;
+    const app = $("#app");
+    const me = S.code && S.loaded ? currentTeacher() : null;
+
+    $("#who").innerHTML = me
+      ? `<span>שלום, ${esc(me.name)}</span><button class="btn-link" data-action="switch-teacher">החלפת מורה</button>`
+      : "";
+    const tabs = $("#tabs");
+    tabs.hidden = !me;
+    tabs.innerHTML = me ? TABS.map(([k, label]) =>
+      `<button data-action="tab" data-tab="${k}" ${S.tab === k ? 'aria-current="page"' : ""}>${label}</button>`).join("") : "";
+
+    if (!S.code) { app.innerHTML = codeScreen(); return; }
+    if (!S.loaded) {
+      app.innerHTML = S.error
+        ? `<div class="card center"><p class="error">${esc(S.error)}</p><button class="btn" data-action="retry">ניסיון חוזר</button></div>`
+        : `<p class="center">מתחבר לענן...</p>`;
+      return;
+    }
+    if (!me) { app.innerHTML = pickerScreen(); return; }
+    app.innerHTML = tabContent();
+  }
+
+  function codeScreen() {
+    return `<div class="card">
+      <h2>כניסה</h2>
+      <form id="codeForm">
+        <div class="field">
+          <label for="codeInput">קוד הגישה של הצוות</label>
+          <input class="inp" id="codeInput" dir="ltr" autocomplete="off" autocapitalize="off"
+                 autocorrect="off" spellcheck="false" required>
+        </div>
+        <button class="btn" type="submit">כניסה</button>
+        ${S.error ? `<p class="error">${esc(S.error)}</p>` : ""}
+      </form>
+      <p class="hint">את הקוד מזינים פעם אחת בלבד בכל מכשיר.</p>
+    </div>`;
+  }
+
+  function pickerScreen() {
+    const active = S.teachers.filter(isActive);
+    const list = active.length
+      ? `<div class="grid">${active.map((t) =>
+          `<button class="pick" data-action="pick" data-id="${t.id}">
+             <span class="nm">${esc(t.name)}</span><span class="sb">${esc(t.subject)}</span></button>`).join("")}</div>`
+      : `<p>עוד לא הוגדרו מורות. הוסיפי את הראשונה:</p>${teacherForm()}`;
+    return `<div class="card"><h2>מי את?</h2>${list}</div>
+      <button class="btn-link" data-action="sign-out-device">יציאה מהמכשיר (הזנת קוד חדש)</button>`;
+  }
+
+  function subjectsList() {
+    const subjects = [...new Set(S.teachers.map((t) => t.subject).filter(Boolean))];
+    return `<datalist id="subjects">${subjects.map((s) => `<option value="${esc(s)}">`).join("")}</datalist>`;
+  }
+
+  function teacherForm() {
+    return `<form id="teacherForm">
+      <div class="field"><label for="tName">שם המורה</label><input class="inp" id="tName" autocomplete="off" required></div>
+      <div class="field"><label for="tSubject">מקצוע לימוד</label><input class="inp" id="tSubject" list="subjects" autocomplete="off" required></div>
+      <button class="btn" type="submit">הוספה</button>
+    </form>${subjectsList()}`;
+  }
+
+  function teacherRow(t) {
+    const on = isActive(t);
+    if (S.editingId === t.id) {
+      return `<div class="row">
+        <input class="inp" id="editName" value="${esc(t.name)}" aria-label="שם">
+        <input class="inp" id="editSubject" list="subjects" value="${esc(t.subject)}" aria-label="מקצוע">
+        <div class="actions">
+          <button class="btn small" data-action="save-edit" data-id="${t.id}">שמירה</button>
+          <button class="btn small secondary" data-action="cancel-edit">ביטול</button>
+        </div></div>`;
+    }
+    return `<div class="row ${on ? "" : "off"}">
+      <span class="name">${esc(t.name)}</span><span class="sub">${esc(t.subject)}</span>
+      <div class="actions">
+        <button class="btn small secondary" data-action="edit" data-id="${t.id}">עריכה</button>
+        <button class="btn small secondary" data-action="toggle" data-id="${t.id}">${on ? "הפיכה ללא פעילה" : "הפעלה מחדש"}</button>
+      </div></div>`;
+  }
+
+  function teachersScreen() {
+    const active = S.teachers.filter(isActive);
+    const inactive = S.teachers.filter((t) => !isActive(t));
+    return `<h2>ניהול מורות</h2>
+      <div class="card"><h3 style="margin-top:0">הוספת מורה</h3>${teacherForm()}</div>
+      <div class="card">
+        ${active.map(teacherRow).join("") || '<p class="center">אין מורות פעילות.</p>'}
+        ${inactive.length ? `<h3>לא פעילות</h3>${inactive.map(teacherRow).join("")}` : ""}
+      </div>
+      <p class="hint">מורה שהפכה ללא פעילה לא מופיעה במסך הכניסה, אבל הכוכבים שחילקה נשמרים.</p>`;
+  }
+
+  function tabContent() {
+    if (S.tab === "teachers") return teachersScreen();
+    const names = { home: "דף הבית", dashboard: "הדשבורד", students: "ניהול התלמידות" };
+    return `<div class="card center"><h2>${names[S.tab]}</h2><p>המסך הזה ייבנה בשלב הבא.</p></div>`;
+  }
+
+  /* ---------- פעולות ---------- */
+  async function addTeacher(name, subject) {
+    name = name.trim(); subject = subject.trim();
+    if (!name || !subject) return toast("יש למלא שם ומקצוע", true);
+    if (S.teachers.some((t) => t.name === name)) return toast("כבר קיימת מורה בשם הזה", true);
+    try {
+      await addDoc(teachersCol(), { name, subject, active: true, createdAt: serverTimestamp() });
+      toast("המורה נוספה");
+    } catch (e) { console.error(e); toast("השמירה נכשלה. נסי שוב.", true); }
+  }
+
+  async function saveEdit(id) {
+    const name = $("#editName").value.trim();
+    const subject = $("#editSubject").value.trim();
+    if (!name || !subject) return toast("יש למלא שם ומקצוע", true);
+    if (S.teachers.some((t) => t.id !== id && t.name === name)) return toast("כבר קיימת מורה בשם הזה", true);
+    try {
+      await updateDoc(teacherDoc(id), { name, subject });
+      S.editingId = null; render(); toast("השינויים נשמרו");
+    } catch (e) { console.error(e); toast("השמירה נכשלה. נסי שוב.", true); }
+  }
+
+  async function toggleActive(id) {
+    const t = S.teachers.find((x) => x.id === id);
+    if (!t) return;
+    if (isActive(t) && !confirm(`להפוך את ${t.name} ללא פעילה?\nהנתונים שלה יישמרו.`)) return;
+    try { await updateDoc(teacherDoc(id), { active: !isActive(t) }); }
+    catch (e) { console.error(e); toast("הפעולה נכשלה. נסי שוב.", true); }
+  }
+
+  /* ---------- אירועים ---------- */
+  document.body.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-action]");
+    if (!b) return;
+    const { action, id, tab } = b.dataset;
+    if (action === "pick") { S.teacherId = id; store.set(LS.teacher, id); S.tab = "home"; render(); }
+    else if (action === "switch-teacher") { S.teacherId = null; store.del(LS.teacher); render(); }
+    else if (action === "sign-out-device") signOutDevice();
+    else if (action === "tab") { S.tab = tab; S.editingId = null; render(); }
+    else if (action === "edit") { S.editingId = id; render(); }
+    else if (action === "cancel-edit") { S.editingId = null; render(); }
+    else if (action === "save-edit") saveEdit(id);
+    else if (action === "toggle") toggleActive(id);
+    else if (action === "retry") connect(S.code);
+  });
+
+  document.body.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (document.activeElement) document.activeElement.blur();
+    if (e.target.id === "codeForm") {
+      const raw = $("#codeInput").value.trim().toLowerCase();
+      if (!/^[a-z0-9]+$/.test(raw)) {
+        S.error = "הקוד כולל רק אותיות באנגלית וספרות.";
+        return render();
+      }
+      connect(raw);
+    } else if (e.target.id === "teacherForm") {
+      addTeacher($("#tName").value, $("#tSubject").value);
+    }
+  });
+
+  /* ---------- הפעלה ---------- */
+  $("#version").textContent = "גרסה " + APP_VERSION;
+  // קישור עם קוד, למשל: ...github.io/stars-app/#code=abc123 , נשמר ונמחק מהכתובת
+  const m = location.hash.match(/code=([A-Za-z0-9]+)/);
+  if (m) {
+    store.set(LS.code, m[1].toLowerCase());
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+  const saved = store.get(LS.code);
+  if (saved) { S.code = saved; connect(saved); } else { render(); }
 </script>
 </body>
 </html>
